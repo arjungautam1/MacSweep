@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- macOS App Sandbox Requirement for Mac App Store Submission -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- User-selected file access for folder scanning & cleanup -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- Network client access -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+
+    <!-- Allow reading and managing user cache & developer directories -->
+    <key>com.apple.security.temporary-exception.files.home-relative-path.read-write</key>
+    <array>
+        <string>/Library/Caches/</string>
+        <string>/Library/Logs/</string>
+        <string>/Library/Developer/</string>
+    </array>
+</dict>
+</plist>
