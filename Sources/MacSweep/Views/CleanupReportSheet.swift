@@ -36,32 +36,53 @@ public struct CleanupReportSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Permission / Failure Notice Banner
-                    if (report?.items.contains { $0.status == .failed } == true) {
-                        HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: "lock.shield.fill")
-                                .foregroundColor(.orange)
-                                .font(.title2)
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text("Some Items Require Full Disk Access")
-                                    .fontWeight(.bold)
-                                Text("macOS restricts modifying or deleting files in protected directories (e.g. ~/Library/Safari, Mail, Containers) without explicit Full Disk Access. Grant Full Disk Access in macOS System Settings and retry cleanup.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                    if let failedItems = report?.items.filter({ $0.status == .failed }), !failedItems.isEmpty {
+                        if !DiskPermissionService.shared.checkAccess() {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "lock.shield.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.title2)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Full Disk Access Required")
+                                        .fontWeight(.bold)
+                                    Text("macOS restricts modifying or deleting files in protected directories (e.g. ~/Library/Safari, Mail, Containers) without explicit Full Disk Access. Grant Full Disk Access in macOS System Settings and retry.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
 
-                                Button("Open Full Disk Access Settings") {
-                                    DiskPermissionService.shared.openFullDiskAccessSettings()
+                                    Button("Open Full Disk Access Settings") {
+                                        DiskPermissionService.shared.openFullDiskAccessSettings()
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .controlSize(.small)
+                                    .padding(.top, 2)
                                 }
-                                .buttonStyle(.bordered)
-                                .controlSize(.small)
-                                .padding(.top, 2)
+                                Spacer()
                             }
-                            Spacer()
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.orange.opacity(0.12))
+                            )
+                        } else if failedItems.contains(where: { $0.path.path.hasPrefix("/Applications/") }) {
+                            HStack(alignment: .top, spacing: 12) {
+                                Image(systemName: "person.badge.key.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.title2)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("Administrator Privileges Required")
+                                        .fontWeight(.bold)
+                                    Text("Applications installed from the Mac App Store or PKG installers are owned by system 'root'. Full Disk Access is active, but macOS requires your password/Touch ID to delete root-owned application bundles. You can reveal the app in Finder and drag it to Trash to authenticate.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                            }
+                            .padding(14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.orange.opacity(0.12))
+                            )
                         }
-                        .padding(14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.orange.opacity(0.12))
-                        )
                     }
 
                     // Result Metrics

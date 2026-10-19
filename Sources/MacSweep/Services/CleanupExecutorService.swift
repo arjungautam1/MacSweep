@@ -131,14 +131,39 @@ public final class CleanupExecutorService: @unchecked Sendable {
                         errorMessage: nil
                     ))
                 } catch {
-                    executionItems.append(CleanupExecutionItem(
-                        name: candidate.name,
-                        path: url,
-                        originalSize: candidate.size,
-                        category: candidate.category,
-                        status: .failed,
-                        errorMessage: error.localizedDescription
-                    ))
+                    // Fallback for root-owned or App Store applications: Request Finder to move to Trash.
+                    // Finder can prompt the user for administrator Touch ID/password if required.
+                    let escapedPath = url.path.replacingOccurrences(of: "\\", with: "\\\\").replacingOccurrences(of: "\"", with: "\\\"")
+                    let script = "tell application \"Finder\" to delete POSIX file \"\(escapedPath)\""
+                    var errorDict: NSDictionary?
+                    if let appleScript = NSAppleScript(source: script) {
+                        let _ = appleScript.executeAndReturnError(&errorDict)
+                    }
+
+                    if errorDict == nil && !fileManager.fileExists(atPath: url.path) {
+                        executionItems.append(CleanupExecutionItem(
+                            name: candidate.name,
+                            path: url,
+                            originalSize: candidate.size,
+                            category: candidate.category,
+                            status: .movedToTrash,
+                            trashURL: nil,
+                            errorMessage: nil
+                        ))
+                    } else {
+                        var friendlyMessage = error.localizedDescription
+                        if friendlyMessage.localizedCaseInsensitiveContains("permission") && url.path.hasPrefix("/Applications/") {
+                            friendlyMessage = "App Store applications in /Applications are owned by system 'root'. Delete via Finder to authenticate with Touch ID/Password."
+                        }
+                        executionItems.append(CleanupExecutionItem(
+                            name: candidate.name,
+                            path: url,
+                            originalSize: candidate.size,
+                            category: candidate.category,
+                            status: .failed,
+                            errorMessage: friendlyMessage
+                        ))
+                    }
                 }
             } else {
                 // Permanent deletion
