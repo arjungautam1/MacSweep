@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MacSweep — The Transparent macOS Storage Cleaner & Disk Analyzer</title>
+  <meta name="description" content="Free, open-source macOS disk cleanup and storage analyzer. Clean disposable caches, developer build artifacts, and orphaned app containers with 100% safety and Trash recoverability.">
+  <link rel="icon" type="image/png" href="favicon.png">
+  
+  <!-- Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-base: #0B0F19;
+      --bg-surface: #121826;
+      --bg-card: rgba(22, 30, 49, 0.75);
+      --bg-card-hover: rgba(28, 38, 62, 0.9);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(59, 130, 246, 0.3);
+      --accent-blue: #3B82F6;
+      --accent-indigo: #6366F1;
+      --accent-purple: #8B5CF6;
+      --accent-emerald: #10B981;
+      --accent-amber: #F59E0B;
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --text-sub: #6B7280;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 22px;
+      --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient background glowing orbs */
+    .glow-orb-1 {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 450px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.18) 0%, rgba(99, 102, 241, 0.08) 50%, transparent 70%);
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .glow-orb-2 {
+      position: absolute;
+      top: 900px;
+      right: -100px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, transparent 70%);
+      filter: blur(90px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navbar */
+    header {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(11, 15, 25, 0.82);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 100;
+      padding: 16px 0;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand img {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-main);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-indigo));
+      color: #FFFFFF;
+      box-shadow: 0 4px 18px rgba(59, 130, 246, 0.35);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 24px rgba(59, 130, 246, 0.45);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-lg {
+      padding: 14px 28px;
+      font-size: 1.05rem;
+      border-radius: var(--radius-md);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #93C5FD;
+      margin-bottom: 24px;
+    }
+
+    .badge-pill span {
+      width: 7px;
+      height: 7px;
+      background: var(--accent-emerald);
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 8px var(--accent-emerald);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.4rem, 5vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+      background: linear-gradient(180deg, #FFFFFF 0%, #CBD5E1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero h1 .gradient-text {
+      background: linear-gradient(135deg, #60A5FA 0%, #A78BFA 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 36px;
+    }
+
+    .hero-cta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .hero-subtext {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+    }
+
+    /* App Preview Window Mockup */
+    .preview-window {
+      margin-top: 54px;
+      background: #111726;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .window-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      background: rgba(18, 24, 38, 0.95);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .traffic-lights {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #FF5F56; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #27C93F; }
+
+    .window-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-left: 12px;
+    }
+
+    .window-body {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 480px;
+      background: #0E1422;
+    }
+
+    .mock-sidebar {
+      background: rgba(14, 20, 34, 0.95);
+      border-right: 1px solid var(--border-color);
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mock-nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 9px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: default;
+    }
+
+    .mock-nav-item.active {
+      background: rgba(59, 130, 246, 0.15);
+      color: #93C5FD;
+      font-weight: 600;
+    }
+
+    .mock-content {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .mock-metric-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+    }
+
+    .mock-progress-track {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 5px;
+      margin: 12px 0 8px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .mock-progress-fill {
+      height: 100%;
+      width: 68%;
+      background: linear-gradient(90deg, #3B82F6, #8B5CF6);
+      border-radius: 5px;
+    }
+
+    .mock-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    .mock-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .mock-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .badge-size {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: #60A5FA;
+      font-weight: 600;
+    }
+
+    /* Feature Grid Section */
+    .section {
+      padding: 90px 0;
+    }
+
+    .section-title {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .section-title h2 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .section-title p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Transparency Comparison Table */
+    .transparency-section {
+      background: linear-gradient(180deg, rgba(14, 20, 34, 0.5) 0%, rgba(18, 24, 38, 0.8) 100%);
+      border-top: 1px solid var(--border-color);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .comparison-table-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-top: 36px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .comparison-table th {
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .tag-safe {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34D399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .tag-protected {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.15);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* FAQ Section */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+
+    .faq-item h4 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .faq-item p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 50px 0 30px;
+      background: #080B12;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text-main);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .window-body {
+        grid-template-columns: 1fr;
+      }
+      .mock-sidebar {
+        display: none;
+      }
+      .mock-grid {
+        grid-template-columns: 1fr;
+      }
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb-1"></div>
+  <div class="glow-orb-2"></div>
+
+  <!-- Header Navigation -->
+  <header>
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <img src="app-icon-256.png" alt="MacSweep Logo">
+        <span>MacSweep</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#transparency">Safety Guarantee</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="https://github.com/arjungautam1/MacSweep" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="MacSweep-AppleSilicon.dmg" class="btn btn-primary" download>
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>Download DMG</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="badge-pill">
+        <span></span>
+        Native Swift 6 • Apple Silicon Optimized • 100% Open Source
+      </div>
+
+      <h1>
+        Clean Your Mac.<br>
+        <span class="gradient-text">With Complete Transparency.</span>
+      </h1>
+
+      <p>
+        Reclaim tens of gigabytes of disposable application caches, orphaned uninstalled app containers, and bloated developer build debris with zero guesswork and full macOS Trash recoverability.
+      </p>
+
+      <div class="hero-cta">
+        <a href="MacSweep-AppleSilicon.dmg" class="btn btn-primary btn-lg" download>
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          <span>Download for Apple Silicon (3.2 MB)</span>
+        </a>
+
+        <a href="https://github.com/arjungautam1/MacSweep" class="btn btn-secondary btn-lg" target="_blank" rel="noopener">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span>Star on GitHub</span>
+        </a>
+      </div>
+
+      <div class="hero-subtext">
+        Requires macOS 14.0 Sonoma or later • Direct DMG Install (No telemetry, no account needed)
+      </div>
+
+      <!-- App Interface Mockup -->
+      <div class="preview-window">
+        <div class="window-titlebar">
+          <div class="traffic-lights">
+            <div class="dot dot-red"></div>
+            <div class="dot dot-yellow"></div>
+            <div class="dot dot-green"></div>
+          </div>
+          <span class="window-title">MacSweep — Storage Overview</span>
+        </div>
+
+        <div class="window-body">
+          <div class="mock-sidebar">
+            <div class="mock-nav-item active">📊 Storage Overview</div>
+            <div class="mock-nav-item">🧹 Cleanup Candidates (24)</div>
+            <div class="mock-nav-item">📱 Apps & Leftovers (4)</div>
+            <div class="mock-nav-item">🌐 Browser Profiles</div>
+            <div class="mock-nav-item">🔨 Developer Artifacts</div>
+            <div class="mock-nav-item">📁 Storage Explorer</div>
+            <div class="mock-nav-item">📜 Cleanup History</div>
+          </div>
+
+          <div class="mock-content">
+            <div class="mock-metric-bar">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <div style="font-weight:700; font-size:1.1rem;">Macintosh HD</div>
+                  <div style="font-size:0.85rem; color:var(--text-sub);">APFS • 494.38 GB Total</div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-weight:700; font-size:1.2rem; color:var(--accent-emerald);">214.2 GB Available</div>
+                  <div style="font-size:0.85rem; color:var(--text-sub);">280.18 GB Used (57%)</div>
+                </div>
+              </div>
+              <div class="mock-progress-track">
+                <div class="mock-progress-fill"></div>
+              </div>
+            </div>
+
+            <div class="mock-grid">
+              <div class="mock-card">
+                <div class="mock-card-header">
+                  <span>⚡ Application Caches</span>
+                  <span class="badge-size">18.4 GB</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Spotify, Slack, Telegram disposable caches. Safe to delete.</p>
+              </div>
+
+              <div class="mock-card">
+                <div class="mock-card-header">
+                  <span>🔨 Developer Artifacts</span>
+                  <span class="badge-size">24.6 GB</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Xcode DerivedData, node_modules. Rebuildable anytime.</p>
+              </div>
+
+              <div class="mock-card">
+                <div class="mock-card-header">
+                  <span>🗑️ Orphaned Leftovers</span>
+                  <span class="badge-size">7.2 GB</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Debris left by uninstalled apps in ~/Library/Containers.</p>
+              </div>
+
+              <div class="mock-card">
+                <div class="mock-card-header">
+                  <span>🌐 Browser Profiles</span>
+                  <span class="badge-size">4.8 GB</span>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted);">Chrome & Arc media caches. Passwords & logins strictly preserved.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature Grid Section -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>Built with Purpose. Engineered for Safety.</h2>
+        <p>MacSweep brings modern architecture, reverse-engineered intelligence, and granular user controls to macOS storage management.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🔍</div>
+          <h3>Orphaned App Leftovers</h3>
+          <p>Dragging an app to the Trash leaves gigabytes behind in <code>~/Library/Containers</code> and <code>Application Support</code>. MacSweep scans for orphaned container debris and purges it with one click.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🔨</div>
+          <h3>Developer Build Manager</h3>
+          <p>Safely reclaim 30GB+ hoarded by Xcode <code>DerivedData</code>, stale <code>node_modules</code>, SPM repositories, and Cargo outputs. Every item includes the exact terminal command to recreate it when needed.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🛡️</div>
+          <h3>Password & Session Protection</h3>
+          <p>Inspects Chrome, Arc, Brave, and Edge profile bloat. Our safety protocol strictly keeps your saved passwords, authentication tokens, cookies, and active website logins safe and untouched.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">♻️</div>
+          <h3>Recoverable by Default (Trash)</h3>
+          <p>Zero accidental destruction. Every cleanup moves files directly to your macOS Trash. If you ever change your mind, right-click the item in macOS Trash and select "Put Back" to restore it instantly.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">🧪</div>
+          <h3>Dry Run Simulation</h3>
+          <p>Preview exactly what would happen before modifying a single byte on disk. Dry run calculates estimated space, verifies file safety, and produces an itemized execution log without deleting files.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>Deep Storage Explorer</h3>
+          <p>Drill down into high-consumption directories ranked by real APFS disk blocks. Provides instant copyable terminal commands (<code>cd</code>, <code>du -sh</code>, <code>open</code>) for power users.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Transparency Comparison Section -->
+  <section class="section transparency-section" id="transparency">
+    <div class="container">
+      <div class="section-title">
+        <h2>What Gets Cleaned vs. What Is Never Touched</h2>
+        <p>Complete transparency is our foundational promise. You never have to guess what MacSweep is deleting.</p>
+      </div>
+
+      <div class="comparison-table-wrapper">
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>File Category</th>
+              <th>Location</th>
+              <th>Status</th>
+              <th>Why It Is Safe / Action Taken</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Application Caches</strong></td>
+              <td><code>~/Library/Caches/*</code></td>
+              <td><span class="tag-safe">✓ Safe to Clean</span></td>
+              <td>Disposable thumbnails and network cache. Apps regenerate fresh cache upon next launch.</td>
+            </tr>
+            <tr>
+              <td><strong>Orphaned Containers</strong></td>
+              <td><code>~/Library/Containers/*</code></td>
+              <td><span class="tag-safe">✓ Safe to Clean</span></td>
+              <td>Debris left behind from apps you already uninstalled weeks or months ago.</td>
+            </tr>
+            <tr>
+              <td><strong>Developer Builds</strong></td>
+              <td><code>DerivedData, node_modules</code></td>
+              <td><span class="tag-safe">✓ Safe to Clean</span></td>
+              <td>Intermediate compiler binaries. Source code is never touched; rebuilds on demand.</td>
+            </tr>
+            <tr>
+              <td><strong>Browser Media Cache</strong></td>
+              <td><code>Chrome/Arc/Brave Profile Cache</code></td>
+              <td><span class="tag-safe">✓ Safe to Clean</span></td>
+              <td>Temporary web graphics and scripts. Passwords, cookies, and logins strictly preserved.</td>
+            </tr>
+            <tr>
+              <td><strong>Personal Documents</strong></td>
+              <td><code>~/Documents, ~/Desktop</code></td>
+              <td><span class="tag-protected">✕ NEVER TOUCHED</span></td>
+              <td>Strictly excluded by PathSafetyValidator. User documents are permanently protected.</td>
+            </tr>
+            <tr>
+              <td><strong>Source Code & Repos</strong></td>
+              <td><code>.git, .ssh, .zshrc</code></td>
+              <td><span class="tag-protected">✕ NEVER TOUCHED</span></td>
+              <td>Git commits, private keys, environment files, and shell configs are never scanned or deleted.</td>
+            </tr>
+            <tr>
+              <td><strong>macOS System Files</strong></td>
+              <td><code>/System, /bin, /usr</code></td>
+              <td><span class="tag-protected">✕ NEVER TOUCHED</span></td>
+              <td>Protected by System Integrity Protection (SIP) and hardcoded application safety rules.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-title">
+        <h2>Frequently Asked Questions</h2>
+        <p>Everything you need to know about MacSweep and how it operates.</p>
+      </div>
+
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>How is MacSweep different from CleanMyMac?</h4>
+          <p>MacSweep is 100% free, open-source, and has zero subscriptions or telemetry. Unlike proprietary cleaners that use closed black-box algorithms, MacSweep clearly explains what every file is, why it exists, and allows you to simulate cleanups in Dry Run mode before committing.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>How do I restore a file if I need it back?</h4>
+          <p>By default, MacSweep uses the native macOS Trash API instead of <code>rm -rf</code>. Open the macOS Trash, locate the item, right-click, and select "Put Back". macOS will restore the file to its exact original directory.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Does MacSweep require Full Disk Access?</h4>
+          <p>MacSweep works out of the box for standard user caches. However, macOS restricts certain folders (like <code>~/Library/Safari</code> or Containers) under TCC. Granting Full Disk Access in macOS System Settings allows MacSweep to detect orphaned containers and browser bloat.</p>
+        </div>
+
+        <div class="faq-item">
+          <h4>Is MacSweep available on the Mac App Store?</h4>
+          <p>We provide a direct DMG release for unrestricted native power. An App Store submission package configured for Apple's App Sandbox is currently prepared and under review.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="app-icon-256.png" alt="MacSweep Icon" style="width:24px; height:24px; border-radius:6px;">
+        <span style="font-weight:700; color:var(--text-main);">MacSweep</span>
+        <span>— Released under the MIT License</span>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://github.com/arjungautam1/MacSweep" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/arjungautam1/MacSweep/issues" target="_blank" rel="noopener">Report Issue</a>
+        <a href="MacSweep-AppleSilicon.dmg" download>Download (.dmg)</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>

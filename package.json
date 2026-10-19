@@ -1,0 +1,8 @@
+{
+  "name": "macsweep",
+  "version": "1.0.0",
+  "description": "MacSweep - The Transparent macOS Storage Cleaner & Disk Analyzer",
+  "scripts": {
+    "build": "echo 'Static build ready'"
+  }
+}
