@@ -30,6 +30,8 @@ public enum NavigationSection: String, CaseIterable, Identifiable, Sendable {
 
 @MainActor
 public final class AppState: ObservableObject {
+    public static let shared = AppState()
+
     @Published public var selectedSection: NavigationSection = .overview
 
     // Disk Metrics
@@ -84,9 +86,31 @@ public final class AppState: ObservableObject {
         candidates.filter { $0.isSelected }.count
     }
 
+    public var safeReclaimableBytes: Int64 {
+        candidates.filter { $0.isSafeByDefault }.reduce(0) { $0 + $1.size }
+    }
+
+    public var safeCandidatesCount: Int {
+        candidates.filter { $0.isSafeByDefault }.count
+    }
+
     // Refresh disk overview
     public func refreshStorageOverview() {
         self.storageOverview = StorageOverview.current()
+    }
+
+    public func quickCleanSafeCaches() {
+        let safeTargets = candidates.filter { $0.isSafeByDefault }.map { candidate -> CleanupCandidate in
+            var c = candidate
+            c.isSelected = true
+            return c
+        }
+        guard !safeTargets.isEmpty else {
+            startComprehensiveScan()
+            return
+        }
+        let plan = CleanupExecutorService.shared.prepareCleanupPlan(from: safeTargets, useTrash: true, isDryRun: isDryRunMode)
+        executePlan(plan)
     }
 
     // Start comprehensive scan
@@ -222,6 +246,7 @@ public final class AppState: ObservableObject {
                 self.storageRootNode = rootNode
                 self.isScanning = false
                 self.scanProgressText = "Scan completed. Found \(self.candidates.count) candidates."
+                StorageNotificationService.shared.checkForLargeFiles()
             }
         }
     }

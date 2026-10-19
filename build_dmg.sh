@@ -2,7 +2,7 @@
 set -e
 
 echo "================================================"
-echo "🍏 Building MacSweep DMG for Apple Silicon Mac"
+echo "🍏 Building MacSweeper DMG for Apple Silicon Mac"
 echo "================================================"
 
 # 1. Compile for Apple Silicon (arm64)
@@ -11,9 +11,9 @@ swift build -c release --triple arm64-apple-macosx14.0
 
 BIN_PATH="$(swift build -c release --triple arm64-apple-macosx14.0 --show-bin-path)/MacSweep"
 
-APP_NAME="MacSweep"
+APP_NAME="MacSweeper"
 APP_BUNDLE="${APP_NAME}.app"
-DMG_NAME="MacSweep-AppleSilicon.dmg"
+DMG_NAME="MacSweeper-AppleSilicon.dmg"
 
 echo "📦 Assembling application bundle: $APP_BUNDLE..."
 rm -rf "$APP_BUNDLE"
@@ -36,13 +36,13 @@ cat <<EOF > "$APP_BUNDLE/Contents/Info.plist"
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>MacSweep</string>
+    <string>MacSweeper</string>
     <key>CFBundleIdentifier</key>
-    <string>com.macsweep.app</string>
+    <string>com.macsweeper.app</string>
     <key>CFBundleName</key>
-    <string>MacSweep</string>
+    <string>MacSweeper</string>
     <key>CFBundleDisplayName</key>
-    <string>MacSweep</string>
+    <string>MacSweeper</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundlePackageType</key>
@@ -58,7 +58,7 @@ cat <<EOF > "$APP_BUNDLE/Contents/Info.plist"
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 MacSweep. All rights reserved.</string>
+    <string>Copyright © 2026 MacSweeper. All rights reserved.</string>
 </dict>
 </plist>
 EOF
@@ -83,15 +83,18 @@ mkdir -p "$STAGING_DIR"
 cp -R "$APP_BUNDLE" "$STAGING_DIR/"
 ln -sf /Applications "$STAGING_DIR/Applications"
 
-rm -f "$DMG_NAME"
+rm -f "$DMG_NAME" "MacSweep-AppleSilicon.dmg"
 hdiutil create \
-    -volname "MacSweep" \
+    -volname "MacSweeper" \
     -srcfolder "$STAGING_DIR" \
     -ov \
     -format UDZO \
     "$DMG_NAME"
 
 rm -rf "$STAGING_DIR"
+
+# Backwards compatible copy
+cp "$DMG_NAME" "MacSweep-AppleSilicon.dmg"
 
 echo "================================================"
 echo "✅ DMG Built Successfully!"

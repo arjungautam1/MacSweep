@@ -13,19 +13,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApplication.shared.applicationIconImage = image
             }
         }
+
+        // Initialize notification permissions & background storage monitoring
+        StorageNotificationService.shared.requestAuthorization()
+        StorageNotificationService.shared.startBackgroundMonitoring(intervalSeconds: 600)
+        StorageNotificationService.shared.checkForLargeFiles()
     }
 }
 
 @main
-struct MacSweepApp: App {
+struct MacSweeperApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var appState = AppState.shared
 
     var body: some Scene {
-        WindowGroup {
-            MainView()
+        WindowGroup("MacSweeper", id: "mainWindow") {
+            MainView(appState: appState)
                 .frame(minWidth: 980, minHeight: 640)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        MenuBarExtra {
+            MenuBarView(appState: appState)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "wand.and.stars")
+                Text(appState.storageOverview.freeBytes.formattedBytes + " Free")
+            }
+        }
+        .menuBarExtraStyle(.window)
     }
 }

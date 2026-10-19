@@ -7,7 +7,11 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 MacSweep.app
+MacSweeper.app
 *.dmg
 !MacSweep-AppleSilicon.dmg
+!MacSweeper-AppleSilicon.dmg
+!public/MacSweep-AppleSilicon.dmg
+!public/MacSweeper-AppleSilicon.dmg
 *.pkg
 build/

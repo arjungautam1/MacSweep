@@ -1,9 +1,11 @@
 import SwiftUI
 
 public struct MainView: View {
-    @StateObject private var appState = AppState()
+    @ObservedObject var appState: AppState
 
-    public init() {}
+    public init(appState: AppState = AppState.shared) {
+        self.appState = appState
+    }
 
     public var body: some View {
         NavigationSplitView {
