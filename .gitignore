@@ -8,5 +8,6 @@ DerivedData/
 .netrc
 MacSweep.app
 *.dmg
+!MacSweep-AppleSilicon.dmg
 *.pkg
 build/

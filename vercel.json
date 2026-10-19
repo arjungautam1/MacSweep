@@ -1,0 +1,35 @@
+{
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    },
+    {
+      "source": "/MacSweep-AppleSilicon.dmg",
+      "headers": [
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"MacSweep-AppleSilicon.dmg\""
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/x-apple-diskimage"
+        }
+      ]
+    }
+  ]
+}
