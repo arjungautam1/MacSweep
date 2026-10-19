@@ -15,7 +15,10 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "MacSweep",
-            path: "Sources/MacSweep"
+            path: "Sources/MacSweep",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "MacSweepTests",

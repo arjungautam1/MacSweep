@@ -68,9 +68,14 @@ public struct AppItem: Identifiable, Sendable {
     public let isSystemApp: Bool
     public let appBinarySize: Int64
     public var relatedFiles: [AppRelatedFile]
+    public var isSelected: Bool = false
     public let isLeftover: Bool
     public let leftoverEvidence: String?
     public let sharedComponentWarning: String?
+
+    public var appSize: Int64 { appBinarySize }
+    public var leftoverSize: Int64 { relatedFiles.reduce(0) { $0 + $1.size } }
+    public var totalReclaimableSize: Int64 { totalSize }
 
     public var totalSize: Int64 {
         appBinarySize + relatedFiles.reduce(0) { $0 + $1.size }

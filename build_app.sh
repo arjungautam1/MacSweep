@@ -15,11 +15,22 @@ mkdir -p "$MACOS_DIR"
 mkdir -p "$RESOURCES_DIR"
 
 # Copy binary and AppIcon
-BIN_PATH="$(swift build -c release --show-bin-path)/MacSweep"
+BIN_DIR="$(swift build -c release --show-bin-path)"
+BIN_PATH="$BIN_DIR/MacSweep"
 cp "$BIN_PATH" "$MACOS_DIR/MacSweeper"
 
+# Copy SPM Resource Bundle if generated
+if [ -d "$BIN_DIR/MacSweep_MacSweep.bundle" ]; then
+    cp -R "$BIN_DIR/MacSweep_MacSweep.bundle" "$RESOURCES_DIR/"
+fi
+
+# Copy AppIcon and Planet/Runner assets directly into Resources
 if [ -f "AppIcon.icns" ]; then
     cp "AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
+fi
+
+if [ -d "Sources/MacSweep/Resources" ]; then
+    cp -R Sources/MacSweep/Resources/* "$RESOURCES_DIR/"
 fi
 
 # Generate Info.plist

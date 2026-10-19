@@ -21,15 +21,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
+struct MenuBarLabelView: View {
+    @ObservedObject var runnerService = MenuBarRunnerService.shared
+    @ObservedObject var telemetry = SystemTelemetryService.shared
+    @ObservedObject var appState = AppState.shared
+
+    var body: some View {
+        HStack(spacing: 4) {
+            if runnerService.displayMode != .metricsOnly {
+                if let nsImage = runnerService.currentFrameImage {
+                    Image(nsImage: nsImage)
+                } else {
+                    Image(systemName: "paintbrush.pointed.fill")
+                }
+            }
+            if runnerService.displayMode != .runnerOnly {
+                Text(String(format: "%.0f%% · %@", telemetry.cpuUsagePercentage, appState.storageOverview.freeBytes.formattedBytes))
+            }
+        }
+    }
+}
+
 @main
 struct MacSweeperApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
 
     var body: some Scene {
-        WindowGroup("MacSweeper", id: "mainWindow") {
+        WindowGroup("MacSweep", id: "mainWindow") {
             MainView(appState: appState)
-                .frame(minWidth: 980, minHeight: 640)
+                .frame(minWidth: 1040, minHeight: 680)
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -37,10 +58,7 @@ struct MacSweeperApp: App {
         MenuBarExtra {
             MenuBarView(appState: appState)
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "wand.and.stars")
-                Text(appState.storageOverview.freeBytes.formattedBytes + " Free")
-            }
+            MenuBarLabelView()
         }
         .menuBarExtraStyle(.window)
     }

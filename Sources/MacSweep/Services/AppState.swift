@@ -3,27 +3,56 @@ import SwiftUI
 import Combine
 
 public enum NavigationSection: String, CaseIterable, Identifiable, Sendable {
-    case overview = "Overview"
-    case candidates = "Cleanup Candidates"
-    case apps = "Apps & Leftovers"
-    case browsers = "Browser Data"
-    case developer = "Developer Files"
-    case largeFiles = "Large & Duplicate Files"
-    case storageExplorer = "Storage Explorer"
-    case history = "Cleanup History"
+    case clean = "Clean"
+    case software = "Software"
+    case optimize = "Optimize"
+    case analyze = "Analyze"
+    case status = "Status"
 
     public var id: String { rawValue }
 
+    public var planetName: String {
+        switch self {
+        case .clean: return "Earth"
+        case .software: return "Mars"
+        case .optimize: return "Mercury"
+        case .analyze: return "Jupiter"
+        case .status: return "Sun"
+        }
+    }
+
+    public var planetStaticImageName: String {
+        switch self {
+        case .clean: return "planet-static-earth"
+        case .software: return "planet-static-mars"
+        case .optimize: return "planet-static-mercury"
+        case .analyze: return "planet-static-jupiter"
+        case .status: return "planet-static-sun"
+        }
+    }
+
+    public var poem: String {
+        switch self {
+        case .clean:
+            return "Mountain rain washes old dust away.\nThe ebbing tide leaves all things new."
+        case .software:
+            return "Red sands bury old traces.\nA great wind opens the road."
+        case .optimize:
+            return "Closest to the sun, swiftest in flight.\nThe lightest touch, and nothing stalls."
+        case .analyze:
+            return "The widest eye of all.\nNo grain too small to find."
+        case .status:
+            return "The light that never sleeps.\nEvery pulse shows in its glow."
+        }
+    }
+
     public var systemIcon: String {
         switch self {
-        case .overview: return "gauge.with.needle"
-        case .candidates: return "sparkles"
-        case .apps: return "app.badge.checkmark"
-        case .browsers: return "globe"
-        case .developer: return "hammer"
-        case .largeFiles: return "arrow.up.left.and.arrow.down.right"
-        case .storageExplorer: return "folder.badge.gearshape"
-        case .history: return "clock.arrow.circlepath"
+        case .clean: return "globe.americas.fill"
+        case .software: return "shippingbox.fill"
+        case .optimize: return "bolt.fill"
+        case .analyze: return "chart.pie.fill"
+        case .status: return "sun.max.fill"
         }
     }
 }
@@ -32,7 +61,10 @@ public enum NavigationSection: String, CaseIterable, Identifiable, Sendable {
 public final class AppState: ObservableObject {
     public static let shared = AppState()
 
-    @Published public var selectedSection: NavigationSection = .overview
+    @Published public var selectedSection: NavigationSection = .clean
+    @Published public var showAICleanupView: Bool = false
+    @Published public var showLicenseModal: Bool = false
+    @Published public var isCleanScreenActive: Bool = false
 
     // Disk Metrics
     @Published public var storageOverview: StorageOverview = StorageOverview.current()
@@ -275,6 +307,23 @@ public final class AppState: ObservableObject {
         if let idx = candidates.firstIndex(where: { $0.id == id }) {
             candidates[idx].isSelected.toggle()
         }
+    }
+
+    public func toggleAppSelection(_ id: UUID) {
+        if let idx = apps.firstIndex(where: { $0.id == id }) {
+            apps[idx].isSelected.toggle()
+        }
+    }
+
+    public func uninstallSelectedApps() {
+        let targets = apps.filter { $0.isSelected }
+        for app in targets {
+            try? FileManager.default.trashItem(at: app.bundleURL, resultingItemURL: nil)
+            for file in app.relatedFiles {
+                try? FileManager.default.trashItem(at: file.path, resultingItemURL: nil)
+            }
+        }
+        startComprehensiveScan()
     }
 
     // Review Plan

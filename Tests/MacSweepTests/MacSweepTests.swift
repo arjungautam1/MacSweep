@@ -210,5 +210,49 @@ struct MacSweepTests {
         #expect(plan.candidates.first?.id == dummy2.id)
         #expect(plan.totalEstimatedReclaimableBytes == 1500)
     }
+
+    @Test("LicenseService validates keys and activates Pro features")
+    @MainActor
+    func testLicenseActivation() throws {
+        let license = LicenseService.shared
+        #expect(license.isPro == true)
+
+        let result = license.activate(key: "MOLE-TEST-KEY-2026")
+        #expect(result.success == true)
+        #expect(license.licenseKey == "MOLE-TEST-KEY-2026")
+
+        let invalid = license.activate(key: "123")
+        #expect(invalid.success == false)
+    }
+
+    @Test("MenuBarRunnerService extracts sprite frames and scales with CPU load")
+    @MainActor
+    func testMenuBarRunner() throws {
+        let runner = MenuBarRunnerService.shared
+        runner.setTheme(.brush)
+        #expect(runner.currentTheme == .brush)
+
+        runner.setTheme(.runcat)
+        #expect(runner.currentTheme == .runcat)
+    }
+
+    @Test("TreemapAnalyzeService categorizes file kinds accurately")
+    func testTreemapFileKinds() throws {
+        #expect(FileKind.from(url: URL(fileURLWithPath: "/test/app.app")) == .application)
+        #expect(FileKind.from(url: URL(fileURLWithPath: "/test/movie.mp4")) == .video)
+        #expect(FileKind.from(url: URL(fileURLWithPath: "/test/main.swift")) == .developer)
+        #expect(FileKind.from(url: URL(fileURLWithPath: "/test/archive.dmg")) == .archive)
+        #expect(FileKind.from(url: URL(fileURLWithPath: "/test/photo.png")) == .image)
+    }
+
+    @Test("SystemTelemetryService explains core macOS daemons in plain language")
+    func testSystemTelemetryDaemonExplanations() throws {
+        let explanation = SystemTelemetryService.explainDaemon(name: "windowserver")
+        #expect(explanation.contains("compositor"))
+
+        let mds = SystemTelemetryService.explainDaemon(name: "mds_stores")
+        #expect(mds.contains("Spotlight"))
+    }
 }
+
 
