@@ -221,11 +221,13 @@ public struct AppDetailRowView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 12) {
-                // App Icon Placeholder
-                Image(systemName: "app.fill")
-                    .font(.system(size: 28))
-                    .foregroundColor(.accentColor)
-                    .frame(width: 36, height: 36)
+                // Native Application Icon
+                AppIconView(
+                    url: app.bundleURL,
+                    appName: app.appName,
+                    bundleIdentifier: app.bundleIdentifier,
+                    size: 38
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
@@ -340,9 +342,15 @@ public struct LeftoverRowView: View {
 
     public var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.orange)
-                .font(.title2)
+            AppIconView(
+                url: app.bundleURL,
+                appName: app.appName,
+                bundleIdentifier: app.bundleIdentifier,
+                fallbackSystemName: "folder.badge.gearshape",
+                size: 38,
+                badgeSystemName: "exclamationmark.circle.fill",
+                badgeColor: .orange
+            )
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

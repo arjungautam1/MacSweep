@@ -97,9 +97,11 @@ public struct BrowserItemRowView: View {
 
     public var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "globe")
-                .font(.title3)
-                .foregroundColor(.blue)
+            AppIconView(
+                appName: item.browser.rawValue,
+                fallbackSystemName: "globe",
+                size: 28
+            )
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

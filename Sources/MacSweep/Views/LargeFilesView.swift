@@ -94,10 +94,11 @@ public struct LargeFileRowView: View {
 
     public var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(systemName: file.kind.systemIcon)
-                .font(.title2)
-                .foregroundColor(.teal)
-                .frame(width: 32, height: 32)
+            AppIconView(
+                url: file.path,
+                fallbackSystemName: file.kind.systemIcon,
+                size: 32
+            )
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack {

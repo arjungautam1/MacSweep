@@ -337,10 +337,12 @@ public struct PlanCandidateItemCard: View {
                 }
                 .buttonStyle(.plain)
 
-                Image(systemName: item.category.systemIcon)
-                    .font(.callout)
-                    .foregroundColor(.secondary)
-                    .frame(width: 18)
+                AppIconView(
+                    url: item.path,
+                    appName: item.associatedAppName,
+                    fallbackSystemName: item.category.systemIcon,
+                    size: 24
+                )
 
                 VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {

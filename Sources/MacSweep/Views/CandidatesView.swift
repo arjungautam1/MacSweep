@@ -195,11 +195,13 @@ public struct CandidateRowView: View {
                 .labelsHidden()
                 .padding(.top, 2)
 
-                // Category Icon
-                Image(systemName: candidate.category.systemIcon)
-                    .font(.title3)
-                    .foregroundColor(.accentColor)
-                    .frame(width: 24, height: 24)
+                // Application / Category Icon
+                AppIconView(
+                    url: candidate.path,
+                    appName: candidate.associatedAppName,
+                    fallbackSystemName: candidate.category.systemIcon,
+                    size: 26
+                )
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
