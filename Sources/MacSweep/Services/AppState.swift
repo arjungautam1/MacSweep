@@ -278,6 +278,16 @@ public final class AppState: ObservableObject {
         executePlan(plan)
     }
 
+    // Rescan only applications and leftovers
+    public func refreshApplications() {
+        Task {
+            let scannedApps = AppAnalyzerService.shared.scanInstalledApplications()
+            await MainActor.run {
+                self.apps = scannedApps
+            }
+        }
+    }
+
     public func executePlan(_ plan: CleanupPlan) {
         self.currentPlan = plan
         self.showPlanSheet = false
@@ -289,9 +299,53 @@ public final class AppState: ObservableObject {
                 self.cleanupHistory.insert(report, at: 0)
                 self.showReportSheet = true
                 self.refreshStorageOverview()
-                // Refresh candidates by removing successfully cleaned ones
-                let removedPaths = Set(report.items.filter { $0.status == .movedToTrash || $0.status == .permanentlyDeleted }.map { $0.path.path })
-                self.candidates.removeAll { removedPaths.contains($0.path.path) }
+
+                // Only prune in-memory models if actual removal took place (not a dry run simulation)
+                if !report.isDryRun {
+                    let removedPaths = Set(report.items.filter {
+                        $0.status == .movedToTrash || $0.status == .permanentlyDeleted
+                    }.map { $0.path.path })
+
+                    func isPathRemoved(_ path: String) -> Bool {
+                        if removedPaths.contains(path) { return true }
+                        for removed in removedPaths {
+                            let prefix = removed.hasSuffix("/") ? removed : removed + "/"
+                            if path.hasPrefix(prefix) { return true }
+                        }
+                        return false
+                    }
+
+                    // 1. Refresh candidates by removing successfully cleaned ones
+                    self.candidates.removeAll { isPathRemoved($0.path.path) }
+
+                    // 2. Refresh apps and orphaned leftovers
+                    self.apps = self.apps.compactMap { app in
+                        // If app bundle was removed, remove the app
+                        if isPathRemoved(app.bundleURL.path) {
+                            return nil
+                        }
+                        // If orphaned leftover and any of its files or bundle was removed, remove it
+                        if app.isLeftover {
+                            if app.relatedFiles.contains(where: { isPathRemoved($0.path.path) }) || isPathRemoved(app.bundleURL.path) {
+                                return nil
+                            }
+                        }
+                        // For installed apps, remove any related files that were cleaned
+                        var updated = app
+                        updated.relatedFiles = app.relatedFiles.filter { !isPathRemoved($0.path.path) }
+                        return updated
+                    }
+
+                    // 3. Refresh developer items
+                    self.developerItems.removeAll { isPathRemoved($0.path.path) }
+
+                    // 4. Refresh browser items
+                    self.browserItems.removeAll { isPathRemoved($0.path.path) }
+
+                    // 5. Refresh large files
+                    self.largeFiles.removeAll { isPathRemoved($0.path.path) }
+                }
+
                 self.refreshPermissions()
             }
         }

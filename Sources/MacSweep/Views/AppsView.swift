@@ -31,6 +31,14 @@ public struct AppsView: View {
                 TextField("Filter applications...", text: $searchText)
                     .textFieldStyle(.roundedBorder)
                     .frame(maxWidth: 240)
+
+                Button(action: {
+                    appState.refreshApplications()
+                }) {
+                    Image(systemName: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+                .help("Refresh applications and leftovers")
             }
             .padding(16)
             .background(Color(nsColor: .windowBackgroundColor))
